@@ -17,19 +17,44 @@ class Network private (firstDim: Int/*, speed*/) {
     }
     throwInput(inLayer, input)
   }
-  /*def study(inSample: Array[Double], outSample: Array[Double]): Network = {
-    def updateWeigths(l: Layer, errs: Array[Double]): Unit = {
+  def study(inSample: Array[Double], outSample: Array[Double]): Network = {
+    require(inLayer.isDefined && outLayer.isDefined)
+    
+    @tailrec
+    def findDeltas(ls: List[(Layer, Array[Double])]): List[(Layer, Array[Double])] = {
+      val (l, errs) = ls.head
       l.prevLayer match {
-        case Some(prevL) => {
-          val newErrs = errs
+        case Some(prevL: HiddenLayer) => { 
+          val prevWeights = for (i <- 0 until prevL.dim) yield prevL.synapsesOfPrevNeuron(i)
+          val seqErrs = prevWeights
+            .map { ar => ar.zip(errs).foldLeft (.0) {(ac, elem) => ac + elem._1 * elem._2} }
+          val newErrs = seqErrs.toArray
+          findDeltas( (prevL, newErrs) :: ls)
         }
-        case None => 
+        case _ => ls
       }
     }
-    val outReal = activate(inSample)
-    val error = outSample zip outReal map { x => x._1 - x._2 }
     
-  }*/
+    @tailrec
+    def changeWeights(ls: List[(Layer, Array[Double])]): Unit = {
+      ls match {
+        case (l:HiddenLayer,deltas) :: tail => {
+          HiddenLayer.redefine(l, deltas)
+          changeWeights(tail)
+        }
+        case _ =>
+      }
+      
+    }
+    
+    val outReal = activate(inSample)
+    val finalError = outSample zip outReal map { x => x._1 - x._2 }
+    val outL = this.outLayer.get
+    var ls = List[(Layer, Array[Double])]( (outL, finalError) )
+    ls = findDeltas(ls)
+    changeWeights(ls)
+    this
+  }
   def <:>(neurons: Int): Network = {
     require(inLayer.isDefined)
     outLayer match {

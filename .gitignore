@@ -37,4 +37,11 @@ local.properties
 # sbteclipse plugin
 .target
 
+### IDEA ###
+*.iml
+*.ipr
+*.iws
+.idea
+out
+
 .cache-main

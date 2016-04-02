@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 class Network private (firstDim: Int/*, speed*/) {
   private var inLayer: Option[InputLayer] = Option(InputLayer(firstDim))
   private var outLayer: Option[Layer] = None
+
   def activate(input: Array[Double]): Array[Double] = {
     require(inLayer.isDefined && outLayer.isDefined)
     @tailrec
@@ -17,7 +18,8 @@ class Network private (firstDim: Int/*, speed*/) {
     }
     throwInput(inLayer, input)
   }
-  def study(inSample: Array[Double], outSample: Array[Double]): Network = {
+
+  def !!(inSample: Array[Double], outSample: Array[Double]): Network = {
     require(inLayer.isDefined && outLayer.isDefined)
     
     @tailrec
@@ -44,7 +46,6 @@ class Network private (firstDim: Int/*, speed*/) {
         }
         case _ =>
       }
-      
     }
     
     val outReal = activate(inSample)
@@ -55,6 +56,7 @@ class Network private (firstDim: Int/*, speed*/) {
     changeWeights(ls)
     this
   }
+  
   def <:>(neurons: Int): Network = {
     require(inLayer.isDefined)
     outLayer match {
@@ -77,7 +79,6 @@ class Network private (firstDim: Int/*, speed*/) {
 
 object Network {
   def apply(neurons: Int): Network = new Network(neurons)
-  
 }
 
 //

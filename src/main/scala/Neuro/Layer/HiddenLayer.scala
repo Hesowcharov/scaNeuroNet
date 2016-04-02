@@ -9,12 +9,14 @@ class HiddenLayer (neurons: Int, activateFunction: Double => Double,
   private val w = Array.fill(neurons, synaps)(math.random * 0.079)
   private var outp: Option[Array[Double]] = None
   private var derOutp: Option[Array[Double]] = None
-  private var prevL: Option[Layer] = Option(prev)
+  private val prevL: Option[Layer] = Option(prev)
   override def prevLayer: Option[Layer] = prevL
 
   override  def in(xs: Array[Double]): Unit = {
+    require(xs.length == prev.dim)
     super.in(xs)
     outp = None
+    derOutp = None
   }
 
   override def out: Array[Double] = {
@@ -52,15 +54,15 @@ class HiddenLayer (neurons: Int, activateFunction: Double => Double,
 
 object HiddenLayer {
   private def activateFunc(arg: Double): Double = 1 / (1 + math.pow(math.E, -arg))
-  private def derivativeFunc(out: Double): Double = { out * (1 - out) }
+  private def derivativeFunc(out: Double): Double = out * (1 - out)
   def apply(neurons: Int, prevLayer: Layer): HiddenLayer = {
     new HiddenLayer(neurons, activateFunc, derivativeFunc, prevLayer)
   }
-  def redefine(l: HiddenLayer, deltas: Array[Double], speed: Double = 0.666): Unit = {
+  def redefine(l: HiddenLayer, deltas: Array[Double], speed: Double = 0.22): Unit = {
     require(l.inp.isDefined)
     for (i <- 0 until l.dim) {
       l.w(i) = l.w(i). zip(l.inp.get)
-        .map { case (a, b) => a + speed * deltas(i) * b * l.out(i) * l.derivativeOut(i)  }
+        .map { case (a, b) => a + speed * deltas(i) * b * l.derivativeOut(i) }
     }
   }
 }

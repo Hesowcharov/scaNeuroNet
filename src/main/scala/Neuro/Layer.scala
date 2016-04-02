@@ -3,7 +3,7 @@ package Neuro
 //2 конструктора - входной слой и промежуточный
 abstract class Layer(n: Int) {
   def dim: Int = n
-  var inp: Option[Array[Double]] = None
+  protected var inp: Option[Array[Double]] = None
   private var nextL: Option[Layer] = None
   def prevLayer: Option[Layer] = None
   def nextLayer: Option[Layer] = nextL
@@ -29,12 +29,17 @@ object InputLayer {
 class HiddenLayer (neurons: Int, activateFunction: Double => Double,
     derivativeFunction: Double => Double, prev: Layer) extends Layer(neurons) {
   val synaps = prev.dim
-  private val w = Array.fill(neurons, synaps)(math.random * 0.5)
+  private val w = Array.fill(neurons, synaps)(math.random * 0.079)
   private var outp: Option[Array[Double]] = None
   private var derOutp: Option[Array[Double]] = None
   private var prevL: Option[Layer] = Option(prev)
   override def prevLayer: Option[Layer] = prevL
-  
+
+  override  def in(xs: Array[Double]): Unit = {
+    super.in(xs)
+    outp = None
+  }
+
   override def out: Array[Double] = {
     require(inp.isDefined)
     outp match {

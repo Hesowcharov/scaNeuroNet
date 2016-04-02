@@ -1,4 +1,4 @@
-import Neuro._
+import Neuro.Network
 
 object MainApp extends App {
   var net = Network (1) <:> 1
@@ -8,6 +8,6 @@ object MainApp extends App {
     .!!(Array(17), Array(1))
     .!!(Array(125), Array(1))
     .!!(Array(56), Array(1))
-  val outp = net.activate(Array(-1111))
+  val outp = net.activate(Array(125))
   println(outp.mkString(" "))
 }

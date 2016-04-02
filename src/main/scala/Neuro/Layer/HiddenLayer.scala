@@ -1,33 +1,10 @@
-package Neuro
+package Neuro.Layer
 
-//2 конструктора - входной слой и промежуточный
-abstract class Layer(n: Int) {
-  def dim: Int = n
-  protected var inp: Option[Array[Double]] = None
-  private var nextL: Option[Layer] = None
-  def prevLayer: Option[Layer] = None
-  def nextLayer: Option[Layer] = nextL
-  def setNextLayer(newLayer: Layer): Unit = nextL = Option(newLayer)
-  def in(xs: Array[Double]): Unit = {
-    require(dim == xs.length)
-    inp = Option(xs)
-    }
-  def out: Array[Double]
-}
-
-class InputLayer private (n: Int) extends Layer(n) {
-  def out: Array[Double] = {
-    require(inp.isDefined)
-    inp.get
-  }
-}
-
-object InputLayer {
-  def apply (neurons: Int): InputLayer = new InputLayer(neurons)
-}
-
+/**
+  * Created by HesowcharovU on 02.04.2016.
+  */
 class HiddenLayer (neurons: Int, activateFunction: Double => Double,
-    derivativeFunction: Double => Double, prev: Layer) extends Layer(neurons) {
+                   derivativeFunction: Double => Double, prev: Layer) extends Layer(neurons) {
   val synaps = prev.dim
   private val w = Array.fill(neurons, synaps)(math.random * 0.079)
   private var outp: Option[Array[Double]] = None
@@ -53,7 +30,7 @@ class HiddenLayer (neurons: Int, activateFunction: Double => Double,
       }//
     }
   }
-  
+
   def derivativeOut: Array[Double] = {
     derOutp match {
       case Some(v) => v
@@ -64,13 +41,13 @@ class HiddenLayer (neurons: Int, activateFunction: Double => Double,
       }
     }
   }
-  
+
   def synapsesOfPrevNeuron(neuron: Int): Array[Double] = {
     require(neuron < prev.dim)
     val seq = for (i <- 0 until this.dim) yield w(i)(neuron)
     seq.toArray
   }
-  
+
 }
 
 object HiddenLayer {

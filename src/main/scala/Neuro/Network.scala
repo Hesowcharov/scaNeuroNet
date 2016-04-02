@@ -1,6 +1,8 @@
 
 package Neuro
 
+import Neuro.Layer._
+
 import scala.annotation.tailrec
 
 class Network private (firstDim: Int/*, speed*/) {

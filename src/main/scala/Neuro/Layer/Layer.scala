@@ -9,8 +9,7 @@ abstract class Layer(n: Int) {
   def nextLayer: Option[Layer] = nextL
   def setNextLayer(newLayer: Layer): Unit = nextL = Option(newLayer)
   def in(xs: Array[Double]): Unit = {
-    require(dim == xs.length)
     inp = Option(xs)
-    }
+  }
   def out: Array[Double]
 }

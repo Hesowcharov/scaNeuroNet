@@ -6,10 +6,12 @@ package Neuro.Layer
 class HiddenLayer (neurons: Int, activateFunction: Double => Double,
                    derivativeFunction: Double => Double, prev: Layer) extends Layer(neurons) {
   val synaps = prev.dim
-  private val w = Array.fill(neurons, synaps)(math.random * 0.079)
+  private val w = Array.fill(neurons, synaps)( randWeight(-1, 1) )
   private var outp: Option[Array[Double]] = None
   private var derOutp: Option[Array[Double]] = None
   private val prevL: Option[Layer] = Option(prev)
+  private def randWeight(a: Double, b: Double): Double = a + math.random * (b - a)
+
   override def prevLayer: Option[Layer] = prevL
 
   override  def in(xs: Array[Double]): Unit = {
@@ -55,14 +57,21 @@ class HiddenLayer (neurons: Int, activateFunction: Double => Double,
 object HiddenLayer {
   private def activateFunc(arg: Double): Double = 1 / (1 + math.pow(math.E, -arg))
   private def derivativeFunc(out: Double): Double = out * (1 - out)
-  def apply(neurons: Int, prevLayer: Layer): HiddenLayer = {
-    new HiddenLayer(neurons, activateFunc, derivativeFunc, prevLayer)
+  private def hypTh(arg: Double): Double = {
+    val v1 = math.exp(arg)
+    val v2 = math.exp(-arg)
+    (v1-v2)/(v1+v2)
   }
-  def redefine(l: HiddenLayer, deltas: Array[Double], speed: Double = 0.22): Unit = {
+  private def derivativeHypTh(out: Double): Double = (1 + out) * (1 - out)
+  def apply(neurons: Int, prevLayer: Layer): HiddenLayer = {
+    new HiddenLayer(neurons, hypTh, derivativeHypTh, prevLayer)
+  }
+  def redefine(l: HiddenLayer, deltas: Array[Double], speed: Double = 0.50): Unit = {
     require(l.inp.isDefined)
+    val input = l.inp.get
     for (i <- 0 until l.dim) {
-      l.w(i) = l.w(i). zip(l.inp.get)
-        .map { case (a, b) => a + speed * deltas(i) * b * l.derivativeOut(i) }
+      l.w(i) = l.w(i). zip(input)
+        .map { case (a, b) => a + speed * deltas(i) * b }
     }
   }
 }

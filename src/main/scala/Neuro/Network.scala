@@ -11,6 +11,7 @@ class Network private (firstDim: Int/*, speed*/) {
 
   def activate(input: Array[Double]): Array[Double] = {
     require(inLayer.isDefined && outLayer.isDefined)
+    require(input.length == inLayer.get.dim)
     @tailrec
     def throwInput(l: Option[Layer], inp: Array[Double]): Array[Double] = {
       l match {
@@ -28,14 +29,15 @@ class Network private (firstDim: Int/*, speed*/) {
 
     @tailrec
     def findDeltas(ls: List[(HiddenLayer, Array[Double])]): List[(HiddenLayer, Array[Double])] = {
-      val (l, errs) = ls.head
+      val (l, prevDeltas) = ls.head
       l.prevLayer match {
         case Some(prevL: HiddenLayer) => { 
           val prevWeights = for (i <- 0 until prevL.dim) yield l.synapsesOfPrevNeuron(i)
-          val seqErrs = prevWeights
-            .map { ar => ar.zip(errs).foldLeft (.0) {(ac, elem) => ac + elem._1 * elem._2} }
-          val newErrs = seqErrs.toArray
-          findDeltas( (prevL, newErrs) :: ls)
+          val prevErrs = prevWeights
+            .map { ar => ar.zip(prevDeltas).foldLeft (.0) {(ac, elem) => ac + elem._1 * elem._2} }
+          val seqDeltas = prevErrs.zip(prevL.derivativeOut).map { case (x,y) => x * y }
+          val newDeltas = seqDeltas.toArray
+          findDeltas( (prevL, newDeltas) :: ls)
         }
         case _ => ls
       }
@@ -53,7 +55,7 @@ class Network private (firstDim: Int/*, speed*/) {
     }
     
     val outReal = activate(inSample)
-    val finalError = outSample zip outReal map { x => x._1 - x._2 }
+    val finalError = outSample zip outReal map { x => (x._2) * (1 - x._2) * (x._1 - x._2) }
     val outL = this.outLayer.get
     var ls = List[(HiddenLayer, Array[Double])]( (outL, finalError) )
     ls = findDeltas(ls)
@@ -62,8 +64,8 @@ class Network private (firstDim: Int/*, speed*/) {
   }
   
   def <:>(neurons: Int): Network = {
-    require(inLayer.isDefined)
-    outLayer match {
+    //require(inLayer.isDefined)
+    this.outLayer match {
       case Some(l) => {
         val  newLayer = HiddenLayer(neurons, l)
         l setNextLayer newLayer
@@ -78,6 +80,12 @@ class Network private (firstDim: Int/*, speed*/) {
         this
       }
     }
+  }
+
+  def defineError(in: Array[Double], out: Array[Double]) : Double = {
+    val outReal = activate(in)
+    val errs = 0.5 * outReal.zip(out).map { case (x,y) => math.pow(x-y, 2) }.foldLeft(.0) { _ + _}
+    errs
   }
 }
 

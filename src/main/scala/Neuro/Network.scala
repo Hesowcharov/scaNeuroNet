@@ -5,7 +5,7 @@ import Neuro.Layer._
 
 import scala.annotation.tailrec
 
-class Network private (firstDim: Int/*, speed*/) {
+class Network private (firstDim: Int) {
   private val inLayer: Option[InputLayer] = Option(InputLayer(firstDim))
   private var outLayer: Option[HiddenLayer] = None
 
@@ -55,16 +55,16 @@ class Network private (firstDim: Int/*, speed*/) {
     }
     
     val outReal = activate(inSample)
-    val finalError = outSample zip outReal map { x => (x._2) * (1 - x._2) * (x._1 - x._2) }
     val outL = this.outLayer.get
-    var ls = List[(HiddenLayer, Array[Double])]( (outL, finalError) )
+    val outDerivative = outL.derivativeOut
+    val outDeltas = (outSample, outReal, outDerivative).zipped.map { (s, r, d) => d * (s - r) }
+    var ls = List[(HiddenLayer, Array[Double])]( (outL, outDeltas) )
     ls = findDeltas(ls)
     changeWeights(ls)
     this
   }
   
   def <:>(neurons: Int): Network = {
-    //require(inLayer.isDefined)
     this.outLayer match {
       case Some(l) => {
         val  newLayer = HiddenLayer(neurons, l)
@@ -84,7 +84,7 @@ class Network private (firstDim: Int/*, speed*/) {
 
   def defineError(in: Array[Double], out: Array[Double]) : Double = {
     val outReal = activate(in)
-    val errs = 0.5 * outReal.zip(out).map { case (x,y) => math.pow(x-y, 2) }.foldLeft(.0) { _ + _}
+    val errs = 0.5 * (outReal.zip(out).map { case (x,y) => math.pow(x - y, 2) }.foldLeft(.0) { _ + _} )
     errs
   }
 }

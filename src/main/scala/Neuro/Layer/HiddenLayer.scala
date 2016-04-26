@@ -6,7 +6,7 @@ package Neuro.Layer
 class HiddenLayer (neurons: Int, activateFunction: Double => Double,
                    derivativeFunction: Double => Double, prev: Layer) extends Layer(neurons) {
   val synaps = prev.dim
-  private val w = Array.fill(neurons, synaps)( randWeight(-1, 1) )
+  private val w = Array.fill(neurons, synaps)( randWeight(-1.1, 1.1) )
   private var outp: Option[Array[Double]] = None
   private var derOutp: Option[Array[Double]] = None
   private val prevL: Option[Layer] = Option(prev)

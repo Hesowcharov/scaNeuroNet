@@ -10,11 +10,6 @@ class Teacher (min: Double, max: Double, left: Double, right: Double) {
     val (inSample, outSample) = samples
     val fixInSample = inSample.map { changeScale }
     val fixOutSample = outSample.map { changeScale }
-    net.!!(fixInSample, fixOutSample)
+    net !! (fixInSample, fixOutSample)
   }
-}
-
-object Teacher {
-  def changeScale(value: Double, min: Double, max: Double, left: Double, right: Double) : Double =
-    (value - min) * (right - left) / (max - min) + left
 }

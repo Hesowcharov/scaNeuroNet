@@ -2,70 +2,94 @@ import Neuro.{ Network, Teacher }
 import scala.annotation.tailrec
 
 object MainApp extends App {
-  var net = Network(3) <:> 2 <:> 1
-  val data = io.Source.fromFile("D:\\dataN1.csv").getLines.map { _.split(";") }.map { _(1).toDouble }.toArray
-  val t: Teacher = new Neuro.Teacher(-0.5, 0.5, -1, 1)
-  def preparingPair(index: Int): (Array[Double], Array[Double]) = {
+  val initNetwork = Network(3) <:> 3 <:> 4 <:> 3 <:> 1
+  val inputFile = args(0)
+  val periodicSequence = io.Source.fromFile(inputFile)
+    .getLines
+    .map { _.split(";") }
+    .map { _(1).toDouble }
+    .toArray
+  val teacher = new Teacher(-0.5, 0.5, -1, 1)
+  
+  def preparePair(index: Int, data: Array[Double]): (Array[Double], Array[Double]) = {
     val m1 = data(index)
     val m2 = data(index + 1)
     val m3 = data(index + 2)
     val next = data(index + 3)
-    (Array(m1, m2, m3), Array(next))
+    (Array(m1, m2, m3).map { teacher.changeScale }, Array(next).map { teacher.changeScale })
   }
-  def studying(epoch: Int): Int = {
+  
+  def studying(neuroNet: Network, data: Array[Double], accuracy: Double): (Network, Int) = {
 
-    def isSuiteAccuracy(times: Int, accuracy: Double): Boolean = {
+    def getAccuracy(net: Network, counter: Int): Double = {
 
       @tailrec
       def recChecking(accum: Double, counter: Int): Double = {
         counter match {
           case 0 => accum
           case _ => {
-            val randInd = (math.random * (data.length - 3)).toInt
-            val (inControl, outControl) = preparingPair(randInd)
+            val randInd = math.random.toInt * (data.length - 3)
+            val (inControl, outControl) = preparePair(randInd, data)
             val newAccum = accum + net.defineError(inControl, outControl)
             recChecking(newAccum, counter - 1)
           }
         }
       }
       
-      val totalErrors = recChecking(0, times)
-      totalErrors <= accuracy
+      recChecking(0, counter)
     }
     
-    for (_ <- 0 until data.length) {
-      val randInd = (math.random * (data.length - 3)).toInt
-      val (inSample, outSample) = preparingPair(randInd)
-      t.teach(net, (inSample, outSample))
+    @tailrec
+    def studyForEpoch(net: Network, indexes: List[Int]): Network = {
+      indexes match {
+        case index :: tail => {
+          val teachingPair = preparePair(index, data)
+          val teachedNet = teacher.teach(neuroNet, teachingPair)
+          studyForEpoch(teachedNet, tail)
+        }
+        case Nil => net
+      }
     }
     
-    if (!isSuiteAccuracy(15, 0.01))
-      studying(epoch + 1)
-    else
-      epoch
+    @tailrec
+    def recStudy(net: Network, epoch: Int): (Network, Int) = {
+      val realAccuracy = getAccuracy(net, 3)
+      if (realAccuracy <= accuracy) {
+        (net, epoch)
+      } else {
+        val shuffledIndexes = util.Random.shuffle(List.range(1, data.length - 3))
+        val teachedNet = studyForEpoch(net, shuffledIndexes)
+        recStudy(teachedNet, epoch+1)
+      }
+    }
+    
+    recStudy(neuroNet, 0)
   }
   
-  def writePrognosis() : Unit = {
-    
-    val writer = new java.io.PrintWriter(new java.io.File("D:\\control2.csv"))
-    
-    def writeNext(data: List[Double], counter: Int): Unit = {
-      val m3 :: m2 :: m1 :: _ = data
-      val input = Array(m1, m2, m3)
-      val output = net.activate(input)
-      val nextValue = output(0)
-      val scaledValue = t.resetScale(nextValue)
-      writer.println(scaledValue)
-      if (counter > 0)
-        writeNext(nextValue::data, counter - 1)
+  def generateNext(net: Network, data: List[Double], counter: Int): List[Double] = {
+    val m3 :: m2 :: m1 :: _ = data
+    val input = Array(m1, m2, m3)
+    val output = net.activate(input)
+    val nextValue = output(0)
+    if (counter > 0) {
+      generateNext(net, nextValue::data, counter - 1)
+    } else {
+      data
     }
-    
-    val firstSeq = List( 0.099, 0.049, 0).map { t.changeScale(_) }
-    writeNext(firstSeq, 40)
+  }
+  
+  def outputPrognosis(outputFile: String, data: List[Double]): Unit = {
+    val writer = new java.io.PrintWriter(new java.io.File(outputFile))
+    for { value <- data.reverseIterator } {
+        writer.println(value)
+    }
     writer.close()
   }
 
-  studying(1)
-  writePrognosis()
-  
+  val (trainedNetwork, epoches) = studying(initNetwork, periodicSequence, 0.01)
+  val firstSeq = List( 0.099, 0.049, 0).map { teacher.changeScale }
+  val prognosisData = generateNext(trainedNetwork, firstSeq, 40).map { teacher.resetScale }
+  val outputFile = "prognosis.csv"
+  outputPrognosis(outputFile, prognosisData)
+  println(s"Epoches for tranning: $epoches")
 }

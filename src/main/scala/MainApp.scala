@@ -6,7 +6,7 @@ object MainApp extends App {
   val inputFile = args(0)
   val periodicSequence = io.Source.fromFile(inputFile)
     .getLines
-    .map { _.split(";") }
+    .map { _.split(",") }
     .map { _(1).toDouble }
     .toArray
   val teacher = new Teacher(-0.5, 0.5, -1, 1)

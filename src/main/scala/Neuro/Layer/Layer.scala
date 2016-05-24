@@ -1,6 +1,5 @@
 package Neuro.Layer
 
-//2 конструктора - входной слой и промежуточный
 abstract class Layer(n: Int) {
   def dim: Int = n
   protected var inp: Option[Array[Double]] = None
